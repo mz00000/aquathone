@@ -13,20 +13,21 @@ HTTP_TIMEOUT = 5  # Timeout for HTTP requests (in seconds)
 BROWSER_TIMEOUT = 10  # Timeout for browser navigation (in seconds)
 BATCH_SIZE = 100  # Number of subdomains per report
 
-def fetch_subdomain(subdomain):
+def fetch_subdomain(subdomain, headers):
     """
     Fetches the HTML content of a subdomain and extracts the page title.
     Also captures a screenshot of the subdomain's homepage.
 
     Args:
         subdomain (str): The subdomain to fetch.
+        headers (dict): The headers to include in the HTTP request.
 
     Returns:
         tuple: A tuple containing the subdomain, page title, and screenshot filename.
     """
     try:
         url = f"http://{subdomain}"
-        response = requests.get(url, timeout=HTTP_TIMEOUT)
+        response = requests.get(url, headers=headers, timeout=HTTP_TIMEOUT)
         print(f"Subdomain: {subdomain}")
         print(f"Status Code: {response.status_code}")
         
@@ -106,13 +107,14 @@ def load_subdomains(file_path):
         subdomains = [line.strip() for line in file if line.strip()]
     return subdomains
 
-def process_subdomains(subdomains, max_workers):
+def process_subdomains(subdomains, max_workers, headers):
     """
     Processes a list of subdomains concurrently, fetching data and taking screenshots.
 
     Args:
         subdomains (list): List of subdomains to process.
         max_workers (int): Number of concurrent workers for processing.
+        headers (dict): The headers to include in the HTTP requests.
 
     Returns:
         list: A list of results, each containing subdomain, title, and screenshot filename.
@@ -121,7 +123,7 @@ def process_subdomains(subdomains, max_workers):
     
     # Use ThreadPoolExecutor for concurrent processing
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(fetch_subdomain, subdomain): subdomain for subdomain in subdomains}
+        futures = {executor.submit(fetch_subdomain, subdomain, headers): subdomain for subdomain in subdomains}
         
         # Collect results as they complete
         for future in as_completed(futures):
@@ -154,7 +156,7 @@ def generate_html_report(results, output_file):
     
     print(f"HTML report generated: {output_file}")
 
-def split_and_process_subdomains(subdomains, max_workers, output_prefix):
+def split_and_process_subdomains(subdomains, max_workers, output_prefix, headers):
     """
     Splits a large list of subdomains into smaller batches and processes each batch,
     generating separate HTML reports for each batch.
@@ -163,13 +165,14 @@ def split_and_process_subdomains(subdomains, max_workers, output_prefix):
         subdomains (list): List of subdomains to process.
         max_workers (int): Number of concurrent workers for processing.
         output_prefix (str): Prefix for the output HTML report filenames.
+        headers (dict): The headers to include in the HTTP requests.
     """
     # Split subdomains into batches of BATCH_SIZE
     for i in range(0, len(subdomains), BATCH_SIZE):
         batch = subdomains[i:i + BATCH_SIZE]
         
         # Process each batch and generate a report
-        batch_results = process_subdomains(batch, max_workers)
+        batch_results = process_subdomains(batch, max_workers, headers)
         output_file = f"{output_prefix}_{i//BATCH_SIZE + 1}.html"
         generate_html_report(batch_results, output_file)
 
@@ -182,13 +185,21 @@ def main():
     parser.add_argument("-i", "--input", required=True, help="Path to the input file containing subdomains")
     parser.add_argument("-o", "--output", default="subdomain_report", help="Prefix for the output HTML reports")
     parser.add_argument("-c", "--concurrency", type=int, default=5, help="Concurrency level")
+    parser.add_argument("-H", "--header", action='append', help="Custom headers to include in the HTTP requests, e.g., 'Header: value'")
     args = parser.parse_args()
+
+    # Parse headers into a dictionary
+    headers = {}
+    if args.header:
+        for header in args.header:
+            key, value = header.split(":", 1)
+            headers[key.strip()] = value.strip()
 
     # Load subdomains from the input file
     subdomains = load_subdomains(args.input)
     
     # Split subdomains into batches and process each batch
-    split_and_process_subdomains(subdomains, args.concurrency, args.output)
+    split_and_process_subdomains(subdomains, args.concurrency, args.output, headers)
 
 if __name__ == "__main__":
     # Entry point for the script
