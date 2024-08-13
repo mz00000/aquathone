@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subdomain Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .subdomain { margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid #ddd; }
+        .screenshot { max-width: 800px; max-height: 600px; margin-top: 10px; border: 2px solid #ddd; padding: 5px; background-color: #f9f9f9; }
+        .toc { margin-bottom: 20px; }
+        .toc ul { list-style-type: none; padding-left: 10px; }
+        .toc ul li { margin-bottom: 5px; }
+        .toc ul li a { text-decoration: none; color: #007BFF; }
+        .toc ul li a:hover { text-decoration: underline; }
+        .toc-header { cursor: pointer; color: #007BFF; }
+        .toc-content { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Subdomain Report</h1>
+    
+    <!-- Table of Contents -->
+    <div class="toc">
+        <h2 class="toc-header">Table of Contents</h2>
+        <div class="toc-content">
+            <ul>
+                {% for subdomain, title, screenshot_filename in results %}
+                <li><a href="#{{ subdomain }}">{{ subdomain }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Subdomain Details -->
+    {% for subdomain, title, screenshot_filename in results %}
+    <div class="subdomain" id="{{ subdomain }}">
+        <h2>{{ subdomain }}</h2>
+        <p><strong>Title:</strong> {{ title }}</p>
+        <p><strong>URL:</strong> <a href="http://{{ subdomain }}">http://{{ subdomain }}</a></p>
+        {% if screenshot_filename %}
+            <img class="screenshot" src="{{ screenshot_filename }}" alt="Screenshot of {{ subdomain }}">
+        {% else %}
+            <p><strong>Screenshot:</strong> Failed to capture screenshot.</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <script>
+        document.querySelector('.toc-header').addEventListener('click', function() {
+            var content = document.querySelector('.toc-content');
+            if (content.style.display === "none" || content.style.display === "") {
+                content.style.display = "block";
+            } else {
+                content.style.display = "none";
+            }
+        });
+    </script>
+</body>
+</html>
