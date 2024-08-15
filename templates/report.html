@@ -37,7 +37,7 @@
     <div class="subdomain" id="{{ subdomain }}">
         <h2>{{ subdomain }}</h2>
         <p><strong>Title:</strong> {{ title }}</p>
-        <p><strong>URL:</strong> <a href="http://{{ subdomain }}">http://{{ subdomain }}</a></p>
+        <p><strong>URL:</strong> <a href="{{ subdomain }}">{{ subdomain }}</a></p>
         {% if screenshot_filename %}
             <img class="screenshot" src="{{ screenshot_filename }}" alt="Screenshot of {{ subdomain }}">
         {% else %}
